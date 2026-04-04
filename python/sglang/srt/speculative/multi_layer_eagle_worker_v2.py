@@ -20,6 +20,11 @@ import torch
 
 from sglang.srt.environ import envs
 from sglang.srt.layers.moe.utils import speculative_moe_backend_context
+from sglang.srt.managers.io_struct import (
+    UpdateWeightFromDiskReqInput,
+    UpdateWeightsFromDistributedReqInput,
+    UpdateWeightsFromIPCReqInput,
+)
 from sglang.srt.managers.schedule_batch import ModelWorkerBatch
 from sglang.srt.managers.scheduler import GenerationBatchResult
 from sglang.srt.managers.tp_worker import TpModelWorker
@@ -750,3 +755,61 @@ class MultiLayerEagleWorkerV2(BaseSpecWorker):
             next_draft_input=next_draft_input,
             accept_lens=accept_length,
         )
+
+    def init_weights_update_group(self, recv_req, tp_worker_group):
+        group_name = recv_req.group_name
+        for i in range(self.speculative_num_steps):
+            self._draft_worker.draft_runner_list[i]._model_update_group[group_name] = (
+                tp_worker_group
+            )
+        return True, "Succeeded to initialize custom process group."
+
+    def destroy_weights_update_group(self, recv_req):
+        group_name = recv_req.group_name
+        for i in range(self.speculative_num_steps):
+            self._draft_worker.draft_runner_list[i]._model_update_group.pop(
+                group_name, None
+            )
+        return True, "Succeeded to destroy custom process group."
+
+    def update_weights_from_disk(self, recv_req: UpdateWeightFromDiskReqInput):
+        for i in range(self.speculative_num_steps):
+            success, message = self._draft_worker.draft_runner_list[
+                i
+            ].update_weights_from_disk(
+                recv_req.model_path,
+                recv_req.load_format,
+                recapture_cuda_graph=recv_req.recapture_cuda_graph,
+            )
+            if not success:
+                return success, message
+        return True, "Succeeded to update model weights."
+
+    def update_weights_from_distributed(
+        self, recv_req: UpdateWeightsFromDistributedReqInput
+    ):
+        for i in range(self.speculative_num_steps):
+            success, message = self._draft_worker.draft_runner_list[
+                i
+            ].update_weights_from_distributed(
+                recv_req.names,
+                recv_req.dtypes,
+                recv_req.shapes,
+                recv_req.group_name,
+                recv_req.load_format,
+            )
+            if not success:
+                return success, message
+        return True, "Succeeded to update model weights."
+
+    def update_weights_from_ipc(self, recv_req: UpdateWeightsFromIPCReqInput):
+        for i in range(self.speculative_num_steps):
+            success, message = self._draft_worker.draft_runner_list[
+                i
+            ].update_weights_from_ipc(
+                recv_req.ipc_path,
+                recv_req.load_format,
+            )
+            if not success:
+                return success, message
+        return True, "Succeeded to update model weights."

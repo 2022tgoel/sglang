@@ -23,7 +23,12 @@ from sglang.srt.layers.moe.utils import (
     speculative_moe_backend_context,
 )
 from sglang.srt.layers.utils.logprob import get_token_ids_logprobs, get_top_logprobs
-from sglang.srt.managers.io_struct import UpdateWeightsFromTensorReqInput
+from sglang.srt.managers.io_struct import (
+    UpdateWeightFromDiskReqInput,
+    UpdateWeightsFromDistributedReqInput,
+    UpdateWeightsFromIPCReqInput,
+    UpdateWeightsFromTensorReqInput,
+)
 from sglang.srt.managers.schedule_batch import ModelWorkerBatch
 from sglang.srt.managers.scheduler import GenerationBatchResult
 from sglang.srt.managers.tp_worker import TpModelWorker
@@ -1041,6 +1046,53 @@ class EAGLEWorkerV2(BaseSpecWorker):
         self.token_to_kv_pool_allocator.get_kvcache().move_kv_cache(
             tgt_cache_loc, accepted_out_cache_loc
         )
+
+    def init_weights_update_group(self, recv_req, tp_worker_group):
+        group_name = recv_req.group_name
+        self._draft_worker.draft_runner._model_update_group[group_name] = (
+            tp_worker_group
+        )
+        return True, "Succeeded to initialize custom process group."
+
+    def destroy_weights_update_group(self, recv_req):
+        group_name = recv_req.group_name
+        self._draft_worker.draft_runner._model_update_group.pop(group_name, None)
+        return True, "Succeeded to destroy custom process group."
+
+    def update_weights_from_disk(self, recv_req: UpdateWeightFromDiskReqInput):
+        success, message = self._draft_worker.draft_runner.update_weights_from_disk(
+            recv_req.model_path,
+            recv_req.load_format,
+            recapture_cuda_graph=recv_req.recapture_cuda_graph,
+        )
+        if not success:
+            return success, message
+        return True, "Succeeded to update model weights."
+
+    def update_weights_from_distributed(
+        self, recv_req: UpdateWeightsFromDistributedReqInput
+    ):
+        success, message = (
+            self._draft_worker.draft_runner.update_weights_from_distributed(
+                recv_req.names,
+                recv_req.dtypes,
+                recv_req.shapes,
+                recv_req.group_name,
+                recv_req.load_format,
+            )
+        )
+        if not success:
+            return success, message
+        return True, "Succeeded to update model weights."
+
+    def update_weights_from_ipc(self, recv_req: UpdateWeightsFromIPCReqInput):
+        success, message = self._draft_worker.draft_runner.update_weights_from_ipc(
+            recv_req.ipc_path,
+            recv_req.load_format,
+        )
+        if not success:
+            return success, message
+        return True, "Succeeded to update model weights."
 
     def update_weights_from_tensor(self, recv_req: UpdateWeightsFromTensorReqInput):
         monkey_patch_torch_reductions()
