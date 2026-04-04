@@ -48,15 +48,15 @@ class SchedulerUpdateWeightsMixin:
     ):
         """In-place update of the weights from disk."""
         success, message = self.tp_worker.update_weights_from_disk(recv_req)
-        if success and hasattr(self, 'draft_worker') and self.draft_worker is not None:
+        tp_success = success
+        if success and self.draft_worker is not None:
             success, message = self.draft_worker.update_weights_from_disk(recv_req)
-        if success:
-            if recv_req.flush_cache:
-                flush_cache_success = self.flush_cache()
-                assert flush_cache_success, "Cache flush failed after updating weights"
-        else:
+        if tp_success and recv_req.flush_cache:
+            flush_cache_success = self.flush_cache()
+            assert flush_cache_success, "Cache flush failed after updating weights"
+        if not success:
             logger.error(message)
-        return UpdateWeightFromDiskReqOutput(success, message)
+        return UpdateWeightFromDiskReqOutput(success, message, 0)
 
     def init_weights_update_group(
         self: Scheduler, recv_req: InitWeightsUpdateGroupReqInput
@@ -78,13 +78,13 @@ class SchedulerUpdateWeightsMixin:
     ) -> Tuple[bool, str]:
         """Update the online model parameter."""
         success, message = self.tp_worker.update_weights_from_distributed(recv_req)
-        if success and hasattr(self, 'draft_worker') and self.draft_worker is not None:
+        tp_success = success
+        if success and self.draft_worker is not None:
             success, message = self.draft_worker.update_weights_from_distributed(recv_req)
-        if success:
-            if recv_req.flush_cache:
-                flush_cache_success = self.flush_cache()
-                assert flush_cache_success, "Cache flush failed after updating weights"
-        else:
+        if tp_success and recv_req.flush_cache:
+            flush_cache_success = self.flush_cache()
+            assert flush_cache_success, "Cache flush failed after updating weights"
+        if not success:
             logger.error(message)
         return UpdateWeightsFromDistributedReqOutput(success, message)
 
@@ -112,13 +112,13 @@ class SchedulerUpdateWeightsMixin:
     ):
         """Update the online model parameter from IPC for checkpoint-engine integration."""
         success, message = self.tp_worker.update_weights_from_ipc(recv_req)
-        if success and hasattr(self, 'draft_worker') and self.draft_worker is not None:
+        tp_success = success
+        if success and self.draft_worker is not None:
             success, message = self.draft_worker.update_weights_from_ipc(recv_req)
-        if success:
-            if recv_req.flush_cache:
-                flush_cache_success = self.flush_cache()
-                assert flush_cache_success, "Cache flush failed after updating weights"
-        else:
+        if tp_success and recv_req.flush_cache:
+            flush_cache_success = self.flush_cache()
+            assert flush_cache_success, "Cache flush failed after updating weights"
+        if not success:
             logger.error(message)
         torch.distributed.barrier(group=self.tp_cpu_group)
         return UpdateWeightsFromIPCReqOutput(success, message)
@@ -223,7 +223,6 @@ def _export_static_state(model):
             (name, buffer.detach().clone()) for name, buffer in model.named_buffers()
         ]
     )
-
 
 def _import_static_state(model, static_params):
     self_named_buffers = dict(model.named_buffers())
