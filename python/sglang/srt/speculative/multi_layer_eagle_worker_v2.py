@@ -755,22 +755,6 @@ class MultiLayerEagleWorkerV2(BaseSpecWorker):
             accept_lens=accept_length,
         )
 
-    def init_weights_update_group(self, recv_req, tp_worker_group):
-        group_name = recv_req.group_name
-        for i in range(self.speculative_num_steps):
-            self._draft_worker.draft_runner_list[i]._model_update_group[group_name] = (
-                tp_worker_group
-            )
-        return True, "Succeeded to initialize custom process group."
-
-    def destroy_weights_update_group(self, recv_req):
-        group_name = recv_req.group_name
-        for i in range(self.speculative_num_steps):
-            self._draft_worker.draft_runner_list[i]._model_update_group.pop(
-                group_name, None
-            )
-        return True, "Succeeded to destroy custom process group."
-
     def update_weights_from_disk(self, recv_req: UpdateWeightFromDiskReqInput):
         for i in range(self.speculative_num_steps):
             success, message = self._draft_worker.draft_runner_list[

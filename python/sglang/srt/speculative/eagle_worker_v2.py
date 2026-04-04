@@ -1046,18 +1046,6 @@ class EAGLEWorkerV2(BaseSpecWorker):
             tgt_cache_loc, accepted_out_cache_loc
         )
 
-    def init_weights_update_group(self, recv_req, tp_worker_group):
-        group_name = recv_req.group_name
-        self._draft_worker.draft_runner._model_update_group[group_name] = (
-            tp_worker_group
-        )
-        return True, "Succeeded to initialize custom process group."
-
-    def destroy_weights_update_group(self, recv_req):
-        group_name = recv_req.group_name
-        self._draft_worker.draft_runner._model_update_group.pop(group_name, None)
-        return True, "Succeeded to destroy custom process group."
-
     def update_weights_from_disk(self, recv_req: UpdateWeightFromDiskReqInput):
         success, message = self._draft_worker.draft_runner.update_weights_from_disk(
             recv_req.model_path,
