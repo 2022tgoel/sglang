@@ -22,7 +22,6 @@ from sglang.srt.environ import envs
 from sglang.srt.layers.moe.utils import speculative_moe_backend_context
 from sglang.srt.managers.io_struct import (
     UpdateWeightFromDiskReqInput,
-    UpdateWeightsFromDistributedReqInput,
     UpdateWeightsFromIPCReqInput,
 )
 from sglang.srt.managers.schedule_batch import ModelWorkerBatch
@@ -780,23 +779,6 @@ class MultiLayerEagleWorkerV2(BaseSpecWorker):
                 recv_req.model_path,
                 recv_req.load_format,
                 recapture_cuda_graph=recv_req.recapture_cuda_graph,
-            )
-            if not success:
-                return success, message
-        return True, "Succeeded to update model weights."
-
-    def update_weights_from_distributed(
-        self, recv_req: UpdateWeightsFromDistributedReqInput
-    ):
-        for i in range(self.speculative_num_steps):
-            success, message = self._draft_worker.draft_runner_list[
-                i
-            ].update_weights_from_distributed(
-                recv_req.names,
-                recv_req.dtypes,
-                recv_req.shapes,
-                recv_req.group_name,
-                recv_req.load_format,
             )
             if not success:
                 return success, message

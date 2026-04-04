@@ -25,8 +25,8 @@ from sglang.srt.layers.moe.utils import (
 from sglang.srt.layers.utils.logprob import get_token_ids_logprobs, get_top_logprobs
 from sglang.srt.managers.io_struct import (
     UpdateWeightFromDiskReqInput,
-    UpdateWeightsFromDistributedReqInput,
     UpdateWeightsFromIPCReqInput,
+    UpdateWeightsFromTensorReqInput,
 )
 from sglang.srt.managers.schedule_batch import ModelWorkerBatch
 from sglang.srt.managers.scheduler import GenerationBatchResult
@@ -1063,22 +1063,6 @@ class EAGLEWorkerV2(BaseSpecWorker):
             recv_req.model_path,
             recv_req.load_format,
             recapture_cuda_graph=recv_req.recapture_cuda_graph,
-        )
-        if not success:
-            return success, message
-        return True, "Succeeded to update model weights."
-
-    def update_weights_from_distributed(
-        self, recv_req: UpdateWeightsFromDistributedReqInput
-    ):
-        success, message = (
-            self._draft_worker.draft_runner.update_weights_from_distributed(
-                recv_req.names,
-                recv_req.dtypes,
-                recv_req.shapes,
-                recv_req.group_name,
-                recv_req.load_format,
-            )
         )
         if not success:
             return success, message
