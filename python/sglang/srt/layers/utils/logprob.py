@@ -453,7 +453,9 @@ def compute_spec_v2_logprobs(
         gathered_logprobs = torch.nn.functional.log_softmax(gathered_logits, dim=-1)
     else:
         temperatures = torch.repeat_interleave(
-            batch.sampling_info.temperatures, max_accept, dim=0,
+            batch.sampling_info.temperatures,
+            max_accept,
+            dim=0,
         )
         gathered_logprobs = torch.nn.functional.log_softmax(
             gathered_logits / temperatures, dim=-1

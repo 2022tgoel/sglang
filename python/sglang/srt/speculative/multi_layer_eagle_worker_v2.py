@@ -20,6 +20,7 @@ import torch
 
 from sglang.srt.environ import envs
 from sglang.srt.layers.moe.utils import speculative_moe_backend_context
+from sglang.srt.layers.utils.logprob import compute_spec_v2_logprobs
 from sglang.srt.managers.schedule_batch import ModelWorkerBatch
 from sglang.srt.managers.scheduler import GenerationBatchResult
 from sglang.srt.managers.tp_worker import TpModelWorker
@@ -37,7 +38,6 @@ from sglang.srt.speculative.multi_layer_eagle_utils import (
     rotate_input_ids_triton,
 )
 from sglang.srt.speculative.spec_info import SpeculativeAlgorithm
-from sglang.srt.layers.utils.logprob import compute_spec_v2_logprobs
 from sglang.srt.speculative.spec_utils import (
     draft_tp_context,
     maybe_detect_nan,
@@ -739,7 +739,9 @@ class MultiLayerEagleWorkerV2(BaseSpecWorker):
             verified_id = torch.empty((0,), device=self.device, dtype=torch.int32)
 
         if batch.return_logprob and not batch.forward_mode.is_idle():
-            compute_spec_v2_logprobs(batch, logits_output, predict, accept_index, self.speculative_num_steps)
+            compute_spec_v2_logprobs(
+                batch, logits_output, predict, accept_index, self.speculative_num_steps
+            )
 
         # Construct the next draft input
         next_draft_input = EagleDraftInput(
