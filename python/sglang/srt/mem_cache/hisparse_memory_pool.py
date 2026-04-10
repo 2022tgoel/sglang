@@ -10,9 +10,9 @@ from sglang.srt.mem_cache.allocator import (
     BaseTokenToKVPoolAllocator,
     PagedTokenToKVPoolAllocator,
 )
-from sglang.srt.utils.common import get_num_new_pages
 from sglang.srt.mem_cache.memory_pool import NSATokenToKVPool
 from sglang.srt.utils import is_cuda, is_hip
+from sglang.srt.utils.common import get_num_new_pages
 
 # sgl_kernel.kvcacheio is only available in CUDA/ROCm sgl-kernel builds (not XPU/MPS/NPU/CPU).
 _is_cuda = is_cuda()
@@ -251,9 +251,15 @@ class HiSparseTokenToKVPoolAllocator(BaseTokenToKVPoolAllocator):
         num_new_pages = get_num_new_pages(
             seq_lens=seq_lens_cpu, page_size=self.page_size, prefix_lens=prefix_lens_cpu
         )
-        if num_new_pages > self.logical_attn_allocator.available_size() // self.page_size:
+        if (
+            num_new_pages
+            > self.logical_attn_allocator.available_size() // self.page_size
+        ):
             return None
-        if num_new_pages > self.hisparse_attn_allocator.available_size() // self.page_size:
+        if (
+            num_new_pages
+            > self.hisparse_attn_allocator.available_size() // self.page_size
+        ):
             return None
 
         logical_indices = self.logical_attn_allocator.alloc_extend(
