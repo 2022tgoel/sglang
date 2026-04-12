@@ -479,6 +479,7 @@ class SchedulerOutputProcessorMixin:
                     accepted_logprobs = [next_token_logprobs[i]]
                     accepted_ids = [next_token_id]
                     max_accept = 1
+
                 for j, tok_id in enumerate(accepted_ids):
                     req.output_token_logprobs_val.append(accepted_logprobs[j])
                     req.output_token_logprobs_idx.append(tok_id)
