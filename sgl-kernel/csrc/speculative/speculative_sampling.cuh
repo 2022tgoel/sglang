@@ -159,15 +159,16 @@ __global__ void TreeSpeculativeSamplingTargetOnly(
   // This would happen when u is very close to 1
   // and the sum of probabilities is smaller than u
   // In this case, we use the last valid index as the sampled id
-  if (temp_storage.sampled_id == d) {
+  int sampled_id = temp_storage.sampled_id;
+  if (sampled_id == d) {
     if (temp_storage.last_valid_id == -1) {
-      temp_storage.sampled_id = d - 1;
+      sampled_id = d - 1;
     } else {
-      temp_storage.sampled_id = temp_storage.last_valid_id;
+      sampled_id = temp_storage.last_valid_id;
     }
   }
   // set the first rejected token
-  predicts[last_accepted_retrive_idx] = temp_storage.sampled_id;
+  predicts[last_accepted_retrive_idx] = sampled_id;
   // value at not used indices are undefined
 }
 
