@@ -472,7 +472,13 @@ class SchedulerOutputProcessorMixin:
                     accepted_logprobs = [next_token_logprobs[i]]
                     accepted_ids = [next_token_id]
                     max_accept = 1
-
+                    # Clip logprobs to match output_ids_through_stop when spec decode
+                    # overshoots (e.g. max_new_tokens or stop token hit mid-batch).
+                    if req.finished_len is not None:
+                        prev_len = len(req.output_ids) - len(next_token_id)
+                        n_valid = max(0, req.finished_len - prev_len)
+                        accepted_logprobs = accepted_logprobs[:n_valid]
+                        accepted_ids = accepted_ids[:n_valid]
                 for j, tok_id in enumerate(accepted_ids):
                     req.output_token_logprobs_val.append(accepted_logprobs[j])
                     req.output_token_logprobs_idx.append(tok_id)
