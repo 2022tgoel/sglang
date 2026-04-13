@@ -1058,8 +1058,7 @@ class EAGLEWorkerV2(BaseSpecWorker):
 
     def update_weights_from_ipc(self, recv_req: UpdateWeightsFromIPCReqInput):
         success, message = self._draft_worker.draft_runner.update_weights_from_ipc(
-            recv_req.ipc_path,
-            recv_req.load_format,
+            recv_req
         )
         if not success:
             return success, message

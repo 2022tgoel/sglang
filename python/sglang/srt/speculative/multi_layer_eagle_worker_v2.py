@@ -772,10 +772,7 @@ class MultiLayerEagleWorkerV2(BaseSpecWorker):
         for i in range(self.speculative_num_steps):
             success, message = self._draft_worker.draft_runner_list[
                 i
-            ].update_weights_from_ipc(
-                recv_req.ipc_path,
-                recv_req.load_format,
-            )
+            ].update_weights_from_ipc(recv_req)
             if not success:
                 return success, message
         return True, "Succeeded to update model weights."
