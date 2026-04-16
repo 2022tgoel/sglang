@@ -1898,20 +1898,13 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
         from sglang.srt.managers.utils import get_alloc_len_per_decode
 
         alloc_len = get_alloc_len_per_decode()
-        if page_size <= 1:
-            return sum(
-                max(0, r.kv_committed_len + 2 * alloc_len - r.kv_allocated_len)
-                for r in requests
-            )
-        new_pages = 0
+        total = 0
         for r in requests:
             x = max(0, r.kv_committed_len + 2 * alloc_len - r.kv_allocated_len)
             cur = r.kv_allocated_len
             nxt = cur + x
-            new_pages += (nxt + page_size - 1) // page_size - (
-                cur + page_size - 1
-            ) // page_size
-        return new_pages * page_size
+            total += ceil_align(nxt, page_size) - ceil_align(cur, page_size)
+        return total
 
     def check_decode_mem(self, selected_indices: Optional[List[int]] = None):
         num_tokens = self.new_tokens_required_next_decode(selected_indices)
