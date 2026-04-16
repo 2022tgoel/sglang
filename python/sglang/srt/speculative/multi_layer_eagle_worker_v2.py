@@ -527,7 +527,10 @@ class MultiLayerEagleDraftWorker(BaseDraftWorker):
             ret_topk_index_list.append(ret_topk_index)
 
         # Update req_to_hidden_states_pool for KV Cache reversion
-        if forward_batch.extend_seq_lens is not None and self.cuda_graph_runner_for_draft_extend is not None:
+        if (
+            forward_batch.extend_seq_lens is not None
+            and self.cuda_graph_runner_for_draft_extend is not None
+        ):
             if can_cuda_graph:
                 last_runner = self.cuda_graph_runner_for_draft_extend.get_last_runner()
                 hs = last_runner.buffers.hidden_states
@@ -540,9 +543,13 @@ class MultiLayerEagleDraftWorker(BaseDraftWorker):
                 esl = forward_batch.extend_seq_lens
                 eslo = forward_batch.extend_start_loc
             assign_hidden_states_pool_triton(
-                hs, rpi, self.req_to_hidden_states_pool,
+                hs,
+                rpi,
+                self.req_to_hidden_states_pool,
                 self.speculative_num_steps - 1,
-                forward_batch.batch_size, esl, eslo,
+                forward_batch.batch_size,
+                esl,
+                eslo,
             )
 
         # Reorganize the spec info for the next batch
