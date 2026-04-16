@@ -533,23 +533,23 @@ class MultiLayerEagleDraftWorker(BaseDraftWorker):
         ):
             if can_cuda_graph:
                 last_runner = self.cuda_graph_runner_for_draft_extend.get_last_runner()
-                hs = last_runner.buffers.hidden_states
-                rpi = last_runner.buffers.req_pool_indices
-                esl = last_runner.buffers.extend_seq_lens
-                eslo = last_runner.buffers.extend_start_loc
+                hidden_states = last_runner.buffers.hidden_states
+                req_pool_indices = last_runner.buffers.req_pool_indices
+                extend_seq_lens = last_runner.buffers.extend_seq_lens
+                extend_start_loc = last_runner.buffers.extend_start_loc
             else:
-                hs = draft_logits_output.logits_output.hidden_states
-                rpi = forward_batch.req_pool_indices
-                esl = forward_batch.extend_seq_lens
-                eslo = forward_batch.extend_start_loc
+                hidden_states = draft_logits_output.logits_output.hidden_states
+                req_pool_indices = forward_batch.req_pool_indices
+                extend_seq_lens = forward_batch.extend_seq_lens
+                extend_start_loc = forward_batch.extend_start_loc
             assign_hidden_states_pool_triton(
-                hs,
-                rpi,
+                hidden_states,
+                req_pool_indices,
                 self.req_to_hidden_states_pool,
                 self.speculative_num_steps - 1,
                 forward_batch.batch_size,
-                esl,
-                eslo,
+                extend_seq_lens,
+                extend_start_loc,
             )
 
         # Reorganize the spec info for the next batch
