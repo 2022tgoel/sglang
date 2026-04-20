@@ -383,9 +383,18 @@ class EagleVerifyInputV2Mixin:
                 sampling_info.temperatures, self.draft_token_num, dim=0
             )  # (bs * num_draft_tokens, 1)
 
+            from sglang.srt.sampling.sampling_params import _SAMPLING_EPS
+
+            greedy_mask = (expanded_temperature < _SAMPLING_EPS).squeeze(-1)
             target_probs = F.softmax(
                 next_token_logits / expanded_temperature, dim=-1
             )  # (bs * num_draft_tokens, vocab_size)
+            greedy_ids = next_token_logits.argmax(dim=-1)
+            greedy_onehot = torch.zeros_like(target_probs)
+            greedy_onehot.scatter_(1, greedy_ids.unsqueeze(-1), 1.0)
+            target_probs = torch.where(
+                greedy_mask.unsqueeze(-1), greedy_onehot, target_probs
+            )
             target_probs = top_k_renorm_prob(
                 target_probs,
                 torch.repeat_interleave(

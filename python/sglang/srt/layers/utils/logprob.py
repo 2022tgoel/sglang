@@ -457,10 +457,20 @@ def compute_spec_v2_logprobs(
             max_accept,
             dim=0,
         )
+        from sglang.srt.sampling.sampling_params import _SAMPLING_EPS
+
+        greedy_mask = (temperatures < _SAMPLING_EPS).squeeze(-1)
         gathered_logprobs = torch.nn.functional.log_softmax(
             gathered_logits / temperatures, dim=-1
         )
+        gathered_logprobs_greedy = torch.nn.functional.log_softmax(
+            gathered_logits, dim=-1
+        )
+        gathered_logprobs = torch.where(
+            greedy_mask.unsqueeze(-1), gathered_logprobs_greedy, gathered_logprobs
+        )
     gathered_logprobs.clamp_(min=torch.finfo(gathered_logprobs.dtype).min)
+    gathered_logprobs.nan_to_num_(0.0)
 
     accepted_token_ids = predict[flat_accept_idx]
     token_logprobs = gathered_logprobs[
