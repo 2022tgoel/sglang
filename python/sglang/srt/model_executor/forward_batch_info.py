@@ -881,12 +881,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
 
         bs = self.batch_size
 
-        if (
-            self.forward_mode.is_decode()
-            or self.forward_mode.is_target_verify()
-            or self.forward_mode.is_draft_extend(include_v2=True)
-            or self.forward_mode.is_idle()
-        ):
+        if self.forward_mode.is_decode() or self.forward_mode.is_idle():
             if self.is_extend_in_batch and dp_padding_mode.is_max_len():
                 setattr(self, "_original_forward_mode", self.forward_mode)
                 self.forward_mode = ForwardMode.EXTEND
@@ -901,12 +896,12 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
                 self.extend_logprob_start_lens_cpu = self.extend_prefix_lens_cpu
             else:
                 setattr(self, "_original_batch_size", self.batch_size)
-                if self.spec_info is not None:
-                    bs = self.batch_size = (
-                        num_tokens // self.spec_info.num_tokens_per_req
-                    )
-                else:
-                    bs = self.batch_size = num_tokens
+                bs = self.batch_size = num_tokens
+        elif self.forward_mode.is_target_verify() or self.forward_mode.is_draft_extend(
+            include_v2=True
+        ):
+            setattr(self, "_original_batch_size", self.batch_size)
+            bs = self.batch_size = num_tokens // self.spec_info.num_tokens_per_req
         elif self.forward_mode.is_extend():
             self.extend_num_tokens = num_tokens
 
