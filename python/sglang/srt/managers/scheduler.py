@@ -191,7 +191,7 @@ from sglang.srt.mem_cache.common import release_kv_cache
 from sglang.srt.mem_cache.radix_cache import RadixCache
 from sglang.srt.mem_cache.session_aware_cache import SessionAwareCache
 from sglang.srt.model_executor.forward_batch_info import ForwardMode, PPProxyTensors
-from sglang.srt.model_loader.utils import _is_moe_model, get_resolved_model_impl
+from sglang.srt.model_loader.utils import get_resolved_model_impl
 from sglang.srt.multiplex.multiplexing_mixin import SchedulerMultiplexMixin
 from sglang.srt.observability.req_time_stats import (
     real_time,
@@ -2312,26 +2312,6 @@ class Scheduler(
             new_batch = self.get_new_batch_prefill()
 
         need_mlp_sync = self.require_mlp_sync
-        draft_model_config = getattr(
-            getattr(self.draft_worker, "draft_worker", None),
-            "model_config",
-            None,
-        )
-        if (
-            need_mlp_sync
-            and not self.spec_algorithm.is_none()
-            and draft_model_config is not None
-            and _is_moe_model(
-                draft_model_config,
-                draft_model_config.hf_config.architectures,
-            )
-        ):
-            # NOTE: This branch makes sure prefill and decode batches will not be mixed when spec and dp-attn is enabled.
-            # Before merging the new batch into running batch:
-            # 1. All new batches are none -> need_mlp_sync remains true (sync is needed for decode batch).
-            # 2. All new batches are some (prefill / idle) -> we do not need prepare mlp sync one more time.
-            new_batch = self.maybe_prepare_mlp_sync_batch(new_batch)
-            need_mlp_sync = new_batch is None
 
         if new_batch is not None:
             # Run prefill first if possible
