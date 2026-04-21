@@ -127,6 +127,7 @@ __global__ void TreeSpeculativeSamplingTargetOnly(
   }
 
   temp_storage.sampled_id = d;
+  temp_storage.last_valid_id = -1;
   __syncthreads();
   sum_relu_q_minus_p = temp_storage.block_aggregate.value;
   DType u = coin * sum_relu_q_minus_p;
