@@ -34,6 +34,7 @@ from sglang.srt.speculative.eagle_utils import verify_tree_greedy_func
 from sglang.srt.speculative.spec_utils import (
     SIMULATE_ACC_LEN,
     generate_simulated_accept_index,
+    maybe_detect_nan,
 )
 from sglang.srt.utils.common import is_cuda, is_hip, is_npu, next_power_of_2
 
@@ -408,6 +409,9 @@ class EagleVerifyInputV2Mixin:
                 ),
             )
             target_probs = target_probs.reshape(bs, self.draft_token_num, -1)
+            maybe_detect_nan(
+                target_probs, "verify sample: target_probs after softmax/renorm"
+            )
             draft_probs = torch.zeros_like(target_probs)
 
             # coins for rejection sampling

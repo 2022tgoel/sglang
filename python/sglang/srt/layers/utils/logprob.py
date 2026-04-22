@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, List, Optional, Union
 import torch
 
 from sglang.srt.environ import envs
+from sglang.srt.speculative.spec_utils import maybe_detect_nan
 
 if TYPE_CHECKING:
     from sglang.srt.layers.logits_processor import LogitsMetadata, LogitsProcessorOutput
@@ -470,7 +471,7 @@ def compute_spec_v2_logprobs(
             greedy_mask.unsqueeze(-1), gathered_logprobs_greedy, gathered_logprobs
         )
     gathered_logprobs.clamp_(min=torch.finfo(gathered_logprobs.dtype).min)
-    gathered_logprobs.nan_to_num_(0.0)
+    maybe_detect_nan(gathered_logprobs)
 
     accepted_token_ids = predict[flat_accept_idx]
     token_logprobs = gathered_logprobs[
