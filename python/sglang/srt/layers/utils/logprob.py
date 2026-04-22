@@ -471,7 +471,7 @@ def compute_spec_v2_logprobs(
             greedy_mask.unsqueeze(-1), gathered_logprobs_greedy, gathered_logprobs
         )
     gathered_logprobs.clamp_(min=torch.finfo(gathered_logprobs.dtype).min)
-    maybe_detect_nan(gathered_logprobs)
+    maybe_detect_nan(gathered_logprobs, "spec v2: gathered logprobs")
 
     accepted_token_ids = predict[flat_accept_idx]
     token_logprobs = gathered_logprobs[
